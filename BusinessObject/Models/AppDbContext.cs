@@ -1,4 +1,4 @@
-﻿using System;
+zzusing System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +17,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<ActivityLog> ActivityLogs { get; set; }
 
+    public virtual DbSet<AiAnalysis> AiAnalyses { get; set; }
+
     public virtual DbSet<AiRecommendation> AiRecommendations { get; set; }
 
     public virtual DbSet<Evaluation> Evaluations { get; set; }
@@ -32,6 +34,10 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<TaskAssignee> TaskAssignees { get; set; }
 
     public virtual DbSet<TaskComment> TaskComments { get; set; }
+
+    public virtual DbSet<TaskEmbedding> TaskEmbeddings { get; set; }
+
+    public virtual DbSet<TaskLog> TaskLogs { get; set; }
 
     public virtual DbSet<TaskVersion> TaskVersions { get; set; }
 
@@ -70,6 +76,29 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.UserId).HasColumnName("user_id");
         });
 
+        modelBuilder.Entity<AiAnalysis>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__ai_analy__3214EC0789A501F9");
+
+            entity.ToTable("ai_analysis");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.AnalysisType)
+                .HasMaxLength(50)
+                .HasColumnName("analysis_type");
+            entity.Property(e => e.Content).HasColumnName("content");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.TaskId).HasColumnName("task_id");
+
+            entity.HasOne(d => d.Task).WithMany(p => p.AiAnalyses)
+                .HasForeignKey(d => d.TaskId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_ai_analysis_tasks");
+        });
+
         modelBuilder.Entity<AiRecommendation>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__ai_recom__3213E83F21EB708F");
@@ -78,6 +107,10 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Reason).HasColumnName("reason");
+            entity.Property(e => e.RecommendationType)
+                .HasMaxLength(50)
+                .HasDefaultValue("assign")
+                .HasColumnName("recommendation_type");
             entity.Property(e => e.Score).HasColumnName("score");
             entity.Property(e => e.SuggestedUserId).HasColumnName("suggested_user_id");
             entity.Property(e => e.TaskId).HasColumnName("task_id");
@@ -203,6 +236,13 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Version)
                 .HasDefaultValue(1)
                 .HasColumnName("version");
+            entity.Property(e => e.Progress)
+                .HasDefaultValue(0)
+                .HasColumnName("progress");
+            entity.Property(e => e.RiskLevel)
+                .HasMaxLength(20)
+                .HasColumnName("risk_level");
+            entity.Property(e => e.AiSummary).HasColumnName("ai_summary");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Tasks)
                 .HasForeignKey(d => d.CreatedBy)
@@ -252,6 +292,48 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.TaskComments)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK__task_comm__user___01142BA1");
+        });
+
+        modelBuilder.Entity<TaskEmbedding>(entity =>
+        {
+            entity.HasKey(e => e.TaskId).HasName("PK__task_emb__0492148D47BA0192");
+
+            entity.ToTable("task_embeddings");
+
+            entity.Property(e => e.TaskId)
+                .ValueGeneratedNever()
+                .HasColumnName("task_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Embedding).HasColumnName("embedding");
+
+            entity.HasOne(d => d.Task).WithOne(p => p.TaskEmbedding)
+                .HasForeignKey<TaskEmbedding>(d => d.TaskId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_task_embeddings_tasks");
+        });
+
+        modelBuilder.Entity<TaskLog>(entity =>
+        {
+            entity.HasKey(e => e.LogId).HasName("PK__task_log__9E2397E02B7D9E0A");
+
+            entity.ToTable("task_logs");
+
+            entity.Property(e => e.LogId).HasColumnName("log_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Note).HasColumnName("note");
+            entity.Property(e => e.Progress).HasColumnName("progress");
+            entity.Property(e => e.TaskId).HasColumnName("task_id");
+
+            entity.HasOne(d => d.Task).WithMany(p => p.TaskLogs)
+                .HasForeignKey(d => d.TaskId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_task_logs_tasks");
         });
 
         modelBuilder.Entity<TaskVersion>(entity =>
