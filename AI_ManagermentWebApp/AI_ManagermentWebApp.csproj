@@ -12,5 +12,8 @@
     <Folder Include="Mapper\" />
     <Folder Include="Service\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BusinessObject\BusinessObject.csproj" />
+  </ItemGroup>
 
 </Project>

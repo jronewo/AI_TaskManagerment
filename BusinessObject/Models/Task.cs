@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace BusinessObject.Models;
@@ -47,11 +47,9 @@ public partial class Task
 
     public virtual ICollection<TaskComment> TaskComments { get; set; } = new List<TaskComment>();
 
-    public virtual ICollection<TaskRequiredSkill> TaskRequiredSkills { get; set; } = new List<TaskRequiredSkill>();
-
-    public virtual ICollection<TaskVersion> TaskVersions { get; set; } = new List<TaskVersion>();
-
     public virtual TaskEmbedding? TaskEmbedding { get; set; }
 
     public virtual ICollection<TaskLog> TaskLogs { get; set; } = new List<TaskLog>();
+
+    public virtual ICollection<TaskVersion> TaskVersions { get; set; } = new List<TaskVersion>();
 }

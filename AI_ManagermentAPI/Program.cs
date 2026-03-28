@@ -24,6 +24,8 @@ builder.Services.AddHttpClient<IHuggingFaceService, HuggingFaceService>();
 builder.Services.AddScoped<ITaskAssignmentService, TaskAssignmentService>();
 builder.Services.AddScoped<ITaskProgressService, TaskProgressService>();
 builder.Services.AddScoped<IAiAnalysisService, AiAnalysisService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // ===== Controllers & Swagger =====
 builder.Services.AddControllers();
@@ -58,5 +60,6 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
+
 
 app.Run();
