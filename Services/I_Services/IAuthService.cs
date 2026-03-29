@@ -9,5 +9,6 @@ namespace Services.I_Services
     {
         Task<(bool Success, string Message)> RegisterAsync(RegisterDTO request);
         Task<(bool Success, string Message, string Token, string Role)> LoginAsync(LoginDTO request);
+        Task<(bool Success, string Message,string Token, string Role)> GoogleLoginAsync(GoogleLoginDTO request);
     }
 }

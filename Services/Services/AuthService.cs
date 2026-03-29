@@ -1,6 +1,7 @@
-﻿using BCrypt.Net;
+using BCrypt.Net;
 using BusinessObject.DTOs;
 using BusinessObject.Models;
+using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Repository.I_Repository;
@@ -62,6 +63,70 @@ namespace Services.Services
 
             var token = GenerateJwtToken(user);
             return (true, "Đăng nhập thành công", token, user.Role);
+        }
+        public async Task<(bool Success, string Message, string Token, string Role)> GoogleLoginAsync(GoogleLoginDTO request)
+        {
+            try
+            {
+                var audience = new List<string>();
+                var singleId = _configuration["GoogleAuth:ClientId"];
+                if (!string.IsNullOrWhiteSpace(singleId))
+                    audience.Add(singleId.Trim());
+                foreach (var child in _configuration.GetSection("GoogleAuth:ClientIds").GetChildren())
+                {
+                    var id = child.Value;
+                    if (!string.IsNullOrWhiteSpace(id))
+                        audience.Add(id.Trim());
+                }
+
+                if (audience.Count == 0)
+                    return (false, "Google Sign-In chưa được cấu hình (GoogleAuth:ClientId).", null!, null!);
+
+                var settings = new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = audience,
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.Token, settings);
+
+                if (string.IsNullOrWhiteSpace(payload.Email))
+                    return (false, "Google không trả về email cho tài khoản này.", null!, null!);
+
+                // 2. Kiểm tra xem user này đã có trong DB của bạn chưa
+                var user = await _userRepository.GetByEmailAsync(payload.Email);
+
+                if (user == null)
+                {
+                    var email = payload.Email ?? string.Empty;
+                    var displayName = payload.Name;
+                    if (string.IsNullOrWhiteSpace(displayName))
+                        displayName = email.Split('@')[0];
+
+                    user = new User
+                    {
+                        Name = displayName ?? "User",
+                        Email = email,
+                        Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
+                        Role = "MEMBER",
+                        Status = 1,
+                        CreatedAt = DateTime.Now,
+                        Avatar = payload.Picture,
+                    };
+                    await _userRepository.AddUserAsync(user);
+                }
+                else if (user.Status != 1)
+                {
+                    return (false, "Tài khoản của bạn đã bị khóa.", null, null);
+                }
+
+                // 3. Tạo JWT Token nội bộ của hệ thống bạn và trả về
+                var token = GenerateJwtToken(user); // Dùng lại hàm GenerateJwtToken đã viết
+                return (true, "Đăng nhập Google thành công", token, user.Role);
+            }
+            catch (Exception)
+            {
+                return (false, "Token Google không hợp lệ hoặc Client ID không khớp với cấu hình server.", null!, null!);
+            }
         }
 
         private string GenerateJwtToken(User user)

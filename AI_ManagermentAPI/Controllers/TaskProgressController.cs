@@ -23,9 +23,6 @@ public class TaskProgressController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Update task progress with automatic risk calculation
-    /// </summary>
     [HttpPut("{taskId}")]
     public async Task<IActionResult> UpdateProgress(int taskId, [FromBody] UpdateProgressRequest request)
     {
@@ -46,9 +43,6 @@ public class TaskProgressController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get progress history logs for a task
-    /// </summary>
     [HttpGet("{taskId}/logs")]
     public async Task<ActionResult<List<TaskLogResponse>>> GetProgressLogs(int taskId)
     {

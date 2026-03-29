@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss()],
     server: {
+      // Cố định origin http://localhost:5173 → thêm đúng URL này trong Google Cloud (Authorized JavaScript origins).
+      port: 5173,
+      strictPort: true,
       proxy: {
         '/api': {
           target: apiProxyTarget,

@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { TaskGenieLogo } from '../components/TaskGenieLogo'
 import { FloatingField } from '../components/auth/FloatingField'
-import { GoogleIcon } from '../components/auth/GoogleIcon'
 import { AuthPromoPanel } from '../components/auth/AuthPromoPanel'
+import { GoogleConnectButton } from '../components/auth/GoogleConnectButton'
 import { registerApi } from '../api/auth'
 
 export default function Register() {
@@ -35,10 +35,6 @@ export default function Register() {
     } finally {
       setLoading(false)
     }
-  }
-
-  function handleGoogleSignUp() {
-    window.alert('Đăng ký với Google — kết nối OAuth khi backend sẵn sàng.')
   }
 
   return (
@@ -123,14 +119,7 @@ export default function Register() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleGoogleSignUp}
-              className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-gray-300 bg-white py-3.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-            >
-              <GoogleIcon className="h-6 w-6" />
-              Sign up with Google
-            </button>
+            <GoogleConnectButton text="signup_with" setError={setError} />
 
             <p className="mt-10 text-center text-sm text-gray-600">
               Already have an account?{' '}

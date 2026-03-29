@@ -61,6 +61,28 @@ export async function loginApi(email, password) {
 /**
  * @returns {Promise<{ message: string }>}
  */
+/**
+ * @param {string} idToken — JWT credential từ Google Identity Services
+ * @returns {Promise<{ message: string, token: string, role: string }>}
+ */
+export async function googleLoginApi(idToken) {
+  const res = await safeFetch(apiUrl('/api/auth/google'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ token: idToken }),
+  })
+  const data = await parseBody(res)
+  if (!res.ok) {
+    const msg =
+      data.message ||
+      data.title ||
+      (typeof data === 'string' ? data : null) ||
+      'Đăng nhập Google thất bại.'
+    throw new Error(msg)
+  }
+  return data
+}
+
 export async function registerApi(name, email, password) {
   const res = await safeFetch(apiUrl('/api/auth/register'), {
     method: 'POST',

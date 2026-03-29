@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { TaskGenieLogo } from '../components/TaskGenieLogo'
 import { FloatingField } from '../components/auth/FloatingField'
-import { GoogleIcon } from '../components/auth/GoogleIcon'
 import { AuthPromoPanel } from '../components/auth/AuthPromoPanel'
+import { GoogleConnectButton } from '../components/auth/GoogleConnectButton'
 import { loginApi } from '../api/auth'
 import { saveSession } from '../lib/authStorage'
 
@@ -33,10 +33,6 @@ export default function Login() {
     } finally {
       setLoading(false)
     }
-  }
-
-  function handleGoogleLogin() {
-    window.alert('Kết nối Google OAuth tại đây (cấu hình backend / client ID).')
   }
 
   return (
@@ -117,14 +113,7 @@ export default function Login() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-            >
-              <GoogleIcon />
-              Log in with Google
-            </button>
+            <GoogleConnectButton text="signin_with" setError={setError} />
 
             <p className="mt-10 text-center text-sm text-gray-600">
               Don&apos;t have an account?{' '}

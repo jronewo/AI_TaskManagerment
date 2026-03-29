@@ -1,4 +1,4 @@
-﻿using BusinessObject.DTOs;
+using BusinessObject.DTOs;
 using BusinessObject.Models;
 using Microsoft.AspNetCore.Mvc;
 using Services.I_Services;
@@ -36,6 +36,23 @@ namespace AI_ManagermentAPI.Controllers
                 return BadRequest(result.Message);
             return Ok(new { message = result.Message });
 
+        }
+
+        [HttpPost("google")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDTO request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Token))
+                return BadRequest(new { message = "Thiếu id_token Google." });
+
+            var result = await _authService.GoogleLoginAsync(request);
+            if (!result.Success)
+                return Unauthorized(new { message = result.Message });
+            return Ok(new
+            {
+                message = result.Message,
+                token = result.Token,
+                role = result.Role
+            });
         }
     }
 }
