@@ -1,8 +1,21 @@
-export function TaskGenieLogo({ className = '' }) {
+export function TaskGenieLogo({ className = '', variant = 'default' }) {
+  const isDark = variant === 'dark'
+  const isAurora = variant === 'aurora'
+
+  let iconClass = 'text-indigo-600'
+  let textClass = 'text-indigo-600'
+  if (isDark) {
+    iconClass = 'text-[#579dff]'
+    textClass = 'text-white'
+  } else if (isAurora) {
+    iconClass = 'text-cyan-400'
+    textClass = ''
+  }
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <svg
-        className="h-9 w-9 shrink-0 text-indigo-600"
+        className={`h-9 w-9 shrink-0 ${iconClass}`}
         viewBox="0 0 40 40"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -31,9 +44,13 @@ export function TaskGenieLogo({ className = '' }) {
           fill="none"
         />
       </svg>
-      <span className="text-xl font-bold tracking-tight text-indigo-600">
-        TaskGenie
-      </span>
+      {isAurora ? (
+        <span className="bg-gradient-to-r from-cyan-200 via-white to-rose-200 bg-clip-text text-xl font-bold tracking-tight text-transparent">
+          TaskGenie
+        </span>
+      ) : (
+        <span className={`text-xl font-bold tracking-tight ${textClass}`}>TaskGenie</span>
+      )}
     </div>
   )
 }
