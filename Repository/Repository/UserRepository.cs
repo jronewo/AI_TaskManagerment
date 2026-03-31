@@ -24,6 +24,16 @@ public class UserRepository : IUserRepository
             .Where(u => u.Status == 1 && u.DeletedAt == null)
             .ToListAsync();
     }
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        return await _context.Users.SingleOrDefaultAsync(u => u.Email == email && u.Status == 1 && u.DeletedAt == null);
+    }
+
+    public async System.Threading.Tasks.Task AddUserAsync(User user)
+    {
+        await _context.Users.AddAsync(user);
+        await _context.SaveChangesAsync();
+    }
 
     public async Task<List<User>> GetByTeamIdAsync(int teamId)
     {
@@ -63,5 +73,11 @@ public class UserRepository : IUserRepository
             .Where(ta => ta.UserId == userId)
             .Include(ta => ta.Task)
             .CountAsync(ta => ta.Task != null && ta.Task.Status != "Done" && ta.Task.Status != "Cancelled");
+    }
+
+    public async System.Threading.Tasks.Task UpdateUserAsync(User user)
+    {
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
     }
 }

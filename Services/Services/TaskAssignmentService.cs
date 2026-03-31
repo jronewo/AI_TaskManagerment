@@ -15,6 +15,9 @@ public class TaskAssignmentService : ITaskAssignmentService
     private readonly IAiRecommendationRepository _aiRecommendationRepository;
     private readonly IHuggingFaceService _huggingFaceService;
     private readonly ITaskEmbeddingRepository _taskEmbeddingRepository;
+    private readonly ITextGenerationService _textGenerationService;
+    private readonly INotificationService _notificationService;
+    private readonly ITaskRequiredSkillRepository _taskRequiredSkillRepository;
     private readonly ILogger<TaskAssignmentService> _logger;
 
     // Trọng số scoring
@@ -29,6 +32,9 @@ public class TaskAssignmentService : ITaskAssignmentService
         IAiRecommendationRepository aiRecommendationRepository,
         IHuggingFaceService huggingFaceService,
         ITaskEmbeddingRepository taskEmbeddingRepository,
+        ITextGenerationService textGenerationService,
+        INotificationService notificationService,
+        ITaskRequiredSkillRepository taskRequiredSkillRepository,
         ILogger<TaskAssignmentService> logger)
     {
         _userRepository = userRepository;
@@ -36,6 +42,9 @@ public class TaskAssignmentService : ITaskAssignmentService
         _aiRecommendationRepository = aiRecommendationRepository;
         _huggingFaceService = huggingFaceService;
         _taskEmbeddingRepository = taskEmbeddingRepository;
+        _textGenerationService = textGenerationService;
+        _notificationService = notificationService;
+        _taskRequiredSkillRepository = taskRequiredSkillRepository;
         _logger = logger;
     }
 
@@ -49,7 +58,7 @@ public class TaskAssignmentService : ITaskAssignmentService
             throw new ArgumentException($"Task with ID {taskId} not found");
 
         // 2. Lấy required skills của task
-        var requiredSkills = await _taskRepository.GetTaskRequiredSkillsAsync(taskId);
+        var requiredSkills = await _taskRequiredSkillRepository.GetByTaskIdAsync(taskId);
         var taskSkillRequirements = requiredSkills.Select(rs => new TaskSkillRequirement
         {
             SkillId = rs.SkillId ?? 0,
@@ -91,56 +100,58 @@ public class TaskAssignmentService : ITaskAssignmentService
         }
 
         // 5. Tính score cho từng user
-        var suggestions = new List<AiSuggestionResult>();
-
-        // 5a. Tính Semantic Similarity score (batch call to HF)
         var semanticScores = await ComputeSemanticScoresAsync(task, taskSkillRequirements, userProfiles);
 
+        // 5a. Thu thập tất cả scores trước
+        var scoredProfiles = new List<ScoredProfile>();
         for (int i = 0; i < userProfiles.Count; i++)
         {
             var profile = userProfiles[i];
-
-            // 5b. Skill Match Score
             var skillMatchScore = ComputeSkillMatchScore(profile, taskSkillRequirements);
-
-            // 5c. Workload Score
             var workloadScore = ComputeWorkloadScore(profile, task.EstimatedTime ?? 4);
-
-            // 5d. Performance Score
             var performanceScore = ComputePerformanceScore(profile);
-
-            // 5e. Semantic Similarity Score
             var semanticScore = i < semanticScores.Count ? semanticScores[i] : 0.5;
-
-            // 5f. Final Score
             var finalScore = SkillMatchWeight * skillMatchScore
                            + SemanticSimilarityWeight * semanticScore
                            + WorkloadWeight * workloadScore
                            + PerformanceWeight * performanceScore;
 
-            // Tạo reason text
-            var reason = BuildReasonText(profile, taskSkillRequirements, skillMatchScore, semanticScore, workloadScore, performanceScore);
-
-            suggestions.Add(new AiSuggestionResult
+            scoredProfiles.Add(new ScoredProfile
             {
-                UserId = profile.UserId,
-                UserName = profile.UserName,
-                Score = Math.Round(finalScore * 100, 2),
-                Reason = reason,
-                SkillMatchScore = Math.Round(skillMatchScore * 100, 2),
-                SemanticSimilarityScore = Math.Round(semanticScore * 100, 2),
-                WorkloadScore = Math.Round(workloadScore * 100, 2),
-                PerformanceScore = Math.Round(performanceScore * 100, 2)
+                Profile = profile,
+                SkillMatchScore = skillMatchScore,
+                SemanticScore = semanticScore,
+                WorkloadScore = workloadScore,
+                PerformanceScore = performanceScore,
+                FinalScore = finalScore
             });
         }
 
-        // Sort by score descending
-        suggestions = suggestions.OrderByDescending(s => s.Score).ToList();
+        // 5b. Sắp xếp theo final score giảm dần
+        scoredProfiles = scoredProfiles.OrderByDescending(sp => sp.FinalScore).ToList();
+
+        // 5c. Tạo comparative reasons cho từng user
+        var suggestions = new List<AiSuggestionResult>();
+        for (int rank = 0; rank < scoredProfiles.Count; rank++)
+        {
+            var sp = scoredProfiles[rank];
+            var reason = BuildComparativeReason(task, sp, scoredProfiles, taskSkillRequirements, rank + 1);
+
+            suggestions.Add(new AiSuggestionResult
+            {
+                UserId = sp.Profile.UserId,
+                UserName = sp.Profile.UserName,
+                Score = Math.Round(sp.FinalScore * 100, 2),
+                Reason = reason,
+                SkillMatchScore = Math.Round(sp.SkillMatchScore * 100, 2),
+                SemanticSimilarityScore = Math.Round(sp.SemanticScore * 100, 2),
+                WorkloadScore = Math.Round(sp.WorkloadScore * 100, 2),
+                PerformanceScore = Math.Round(sp.PerformanceScore * 100, 2)
+            });
+        }
 
         // 6. Lưu recommendations vào DB
         await SaveRecommendationsAsync(taskId, suggestions);
-
-        // 7. Lưu Task Embedding (bỏ qua - HF hiện dùng SentenceSimilarity pipeline, không trả embedding trực tiếp)
 
         _logger.LogInformation("Generated {Count} recommendations for TaskId={TaskId}", suggestions.Count, taskId);
 
@@ -157,11 +168,17 @@ public class TaskAssignmentService : ITaskAssignmentService
     public async Task<bool> AcceptRecommendationAsync(int taskId, int userId)
     {
         var existingAssignees = await _taskRepository.GetTaskAssigneesAsync(taskId);
+        
+        // Luôn luôn clear tất cả những người cũ để đảm bảo 1 task 1 người
+        await _taskRepository.ClearTaskAssigneesAsync(taskId);
+
+        // Nếu click lại đúng người đang được gán -> Hành vi Unassign (Gỡ)
         if (existingAssignees.Any(a => a.UserId == userId))
         {
-            return false; // Already assigned
+            return true; // Đã unassign thành công
         }
 
+        // Nếu click người mới -> Gán thành viên mới
         var assignee = new TaskAssignee
         {
             TaskId = taskId,
@@ -169,6 +186,22 @@ public class TaskAssignmentService : ITaskAssignmentService
         };
 
         await _taskRepository.AddTaskAssigneeAsync(assignee);
+        
+        // Notify the user
+        var task = await _taskRepository.GetByIdAsync(taskId);
+        if (task != null)
+        {
+            await _notificationService.CreateNotificationAsync(new CreateNotificationDto
+            {
+                UserId = userId,
+                Type = "TASK_ASSIGN",
+                Title = "Phân công mới",
+                Message = $"Bạn vừa được phân công thực hiện task: {task.Title} (#{taskId})",
+                ReferenceId = taskId,
+                ReferenceType = "Task"
+            });
+        }
+
         return true;
     }
 
@@ -345,60 +378,138 @@ public class TaskAssignmentService : ITaskAssignmentService
         return sb.ToString();
     }
 
-    private string BuildReasonText(
-        UserSkillProfile profile,
+    /// <summary>
+    /// Build comparative reason: so sánh user với các team members khác
+    /// </summary>
+    private string BuildComparativeReason(
+        BusinessObject.Models.Task task,
+        ScoredProfile current,
+        List<ScoredProfile> allProfiles,
         List<TaskSkillRequirement> requirements,
-        double skillScore, double semanticScore,
-        double workloadScore, double performanceScore)
+        int rank)
     {
-        var reasons = new List<string>();
+        var profile = current.Profile;
+        var totalMembers = allProfiles.Count;
+        var sb = new StringBuilder();
 
-        // Skill match analysis
+        // === 1. RANKING ===
+        sb.AppendLine($"📊 Xếp hạng: #{rank}/{totalMembers} trong team");
+        if (rank == 1)
+            sb.AppendLine($"🏆 Ứng viên phù hợp NHẤT cho task \"{task.Title}\" với tổng điểm {Math.Round(current.FinalScore * 100, 1)}%");
+        else
+        {
+            var best = allProfiles[0];
+            var gap = Math.Round((best.FinalScore - current.FinalScore) * 100, 1);
+            sb.AppendLine($"📉 Thấp hơn #{1} ({best.Profile.UserName}) {gap} điểm");
+        }
+
+        // === 2. SKILL MATCH BREAKDOWN ===
+        var avgSkill = allProfiles.Average(p => p.SkillMatchScore);
+        var bestSkill = allProfiles.Max(p => p.SkillMatchScore);
+        var bestSkillUser = allProfiles.First(p => p.SkillMatchScore == bestSkill).Profile.UserName;
+        sb.AppendLine();
+        sb.AppendLine($"🔧 Skill Match: {Math.Round(current.SkillMatchScore * 100, 1)}% (TB team: {Math.Round(avgSkill * 100, 1)}%, Cao nhất: {Math.Round(bestSkill * 100, 1)}% - {bestSkillUser})");
+
         if (requirements.Count > 0)
         {
-            var matchedSkills = requirements
-                .Where(r => profile.Skills.Any(s => s.SkillId == r.SkillId && s.Level >= r.RequiredLevel))
-                .Select(r => r.SkillName)
-                .ToList();
+            foreach (var req in requirements)
+            {
+                var userSkill = profile.Skills.FirstOrDefault(s => s.SkillId == req.SkillId);
+                var othersWithSkill = allProfiles.Count(p => p.Profile.Skills.Any(s => s.SkillId == req.SkillId));
 
-            var missingSkills = requirements
-                .Where(r => !profile.Skills.Any(s => s.SkillId == r.SkillId))
-                .Select(r => r.SkillName)
-                .ToList();
-
-            if (matchedSkills.Count > 0)
-                reasons.Add($"✅ Đáp ứng skill: {string.Join(", ", matchedSkills)}");
-
-            if (missingSkills.Count > 0)
-                reasons.Add($"⚠️ Thiếu skill: {string.Join(", ", missingSkills)}");
+                if (userSkill != null)
+                {
+                    var levelStatus = userSkill.Level >= req.RequiredLevel ? "✅" : "⚠️";
+                    sb.AppendLine($"  {levelStatus} {req.SkillName}: Level {userSkill.Level}/{req.RequiredLevel} (yêu cầu). {othersWithSkill}/{totalMembers} members có skill này");
+                }
+                else
+                {
+                    sb.AppendLine($"  ❌ {req.SkillName}: Không có (cần level {req.RequiredLevel}). {othersWithSkill}/{totalMembers} members có skill này");
+                }
+            }
         }
 
-        // Workload
-        if (profile.ActiveTaskCount == 0)
-            reasons.Add("✅ Đang rảnh, không có task nào đang làm");
-        else if (profile.ActiveTaskCount <= 2)
-            reasons.Add($"📋 Đang có {profile.ActiveTaskCount} task");
+        // === 3. SEMANTIC SIMILARITY BREAKDOWN ===
+        var avgSemantic = allProfiles.Average(p => p.SemanticScore);
+        var bestSemantic = allProfiles.Max(p => p.SemanticScore);
+        var bestSemanticUser = allProfiles.First(p => p.SemanticScore == bestSemantic).Profile.UserName;
+        sb.AppendLine();
+        sb.AppendLine($"🧠 AI Semantic Match: {Math.Round(current.SemanticScore * 100, 1)}% (TB team: {Math.Round(avgSemantic * 100, 1)}%, Cao nhất: {Math.Round(bestSemantic * 100, 1)}% - {bestSemanticUser})");
+        if (current.SemanticScore >= 0.8)
+            sb.AppendLine($"  → Profile RẤT phù hợp với nội dung task theo phân tích AI");
+        else if (current.SemanticScore >= 0.6)
+            sb.AppendLine($"  → Profile KHÁ phù hợp với nội dung task");
+        else if (current.SemanticScore >= 0.4)
+            sb.AppendLine($"  → Profile TRUNG BÌNH so với yêu cầu task");
         else
-            reasons.Add($"⚠️ Đang tải cao: {profile.ActiveTaskCount} task");
+            sb.AppendLine($"  → Profile ÍT liên quan đến nội dung task");
 
-        // Performance
+        // === 4. WORKLOAD BREAKDOWN ===
+        var avgWorkload = allProfiles.Average(p => p.WorkloadScore);
+        var bestWorkload = allProfiles.Max(p => p.WorkloadScore);
+        var bestWorkloadUser = allProfiles.First(p => p.WorkloadScore == bestWorkload).Profile.UserName;
+        sb.AppendLine();
+        sb.AppendLine($"📋 Workload: {Math.Round(current.WorkloadScore * 100, 1)}% (TB team: {Math.Round(avgWorkload * 100, 1)}%, Rảnh nhất: {Math.Round(bestWorkload * 100, 1)}% - {bestWorkloadUser})");
+        sb.AppendLine($"  → Đang có {profile.ActiveTaskCount} task đang làm, {profile.TotalAvailableHours}h khả dụng/tuần");
+
+        var leastBusy = allProfiles.OrderBy(p => p.Profile.ActiveTaskCount).First();
+        var mostBusy = allProfiles.OrderByDescending(p => p.Profile.ActiveTaskCount).First();
+        if (profile.UserId == leastBusy.Profile.UserId)
+            sb.AppendLine($"  🟢 Ít task nhất trong team");
+        else
+            sb.AppendLine($"  So sánh: {leastBusy.Profile.UserName} chỉ có {leastBusy.Profile.ActiveTaskCount} task, {mostBusy.Profile.UserName} có {mostBusy.Profile.ActiveTaskCount} task");
+
+        // === 5. PERFORMANCE BREAKDOWN ===
+        var avgPerf = allProfiles.Average(p => p.PerformanceScore);
+        var bestPerf = allProfiles.Max(p => p.PerformanceScore);
+        var bestPerfUser = allProfiles.First(p => p.PerformanceScore == bestPerf).Profile.UserName;
+        sb.AppendLine();
+        sb.AppendLine($"⭐ Performance: {Math.Round(current.PerformanceScore * 100, 1)}% (TB team: {Math.Round(avgPerf * 100, 1)}%, Cao nhất: {Math.Round(bestPerf * 100, 1)}% - {bestPerfUser})");
+
         if (profile.Evaluation != null)
         {
-            var avgPerf = (profile.Evaluation.AvgSkillScore + profile.Evaluation.AvgTeamworkScore
-                         + profile.Evaluation.AvgCommunicationScore + profile.Evaluation.AvgDeadlineScore) / 4.0;
-            if (avgPerf >= 8)
-                reasons.Add("⭐ Hiệu suất xuất sắc");
-            else if (avgPerf >= 6)
-                reasons.Add("👍 Hiệu suất tốt");
+            var eval = profile.Evaluation;
+            sb.AppendLine($"  → Kỹ năng: {eval.AvgSkillScore:F1}/10, Teamwork: {eval.AvgTeamworkScore:F1}/10, Giao tiếp: {eval.AvgCommunicationScore:F1}/10, Deadline: {eval.AvgDeadlineScore:F1}/10");
+        }
+        else
+        {
+            sb.AppendLine($"  → Chưa có đánh giá hiệu suất (mặc định 50%)");
         }
 
-        // AI similarity
-        if (semanticScore >= 0.8)
-            reasons.Add("🤖 AI: Profile rất phù hợp với task");
-        else if (semanticScore >= 0.6)
-            reasons.Add("🤖 AI: Profile khá phù hợp với task");
+        // === 6. KẾT LUẬN ===
+        sb.AppendLine();
+        sb.Append("💡 Kết luận: ");
+        var strengths = new List<string>();
+        var weaknesses = new List<string>();
 
-        return string.Join(". ", reasons);
+        if (current.SkillMatchScore >= avgSkill) strengths.Add("skill match");
+        else weaknesses.Add("skill match");
+        if (current.SemanticScore >= avgSemantic) strengths.Add("AI semantic");
+        else weaknesses.Add("AI semantic");
+        if (current.WorkloadScore >= avgWorkload) strengths.Add("workload availability");
+        else weaknesses.Add("workload");
+        if (current.PerformanceScore >= avgPerf) strengths.Add("performance");
+        else weaknesses.Add("performance");
+
+        if (strengths.Count > 0)
+            sb.Append($"Nổi trội hơn team ở: {string.Join(", ", strengths)}. ");
+        if (weaknesses.Count > 0)
+            sb.Append($"Yếu hơn team ở: {string.Join(", ", weaknesses)}.");
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Internal class to hold all scores for a user profile before building reasons
+    /// </summary>
+    private class ScoredProfile
+    {
+        public UserSkillProfile Profile { get; set; } = null!;
+        public double SkillMatchScore { get; set; }
+        public double SemanticScore { get; set; }
+        public double WorkloadScore { get; set; }
+        public double PerformanceScore { get; set; }
+        public double FinalScore { get; set; }
     }
 
     private async Task SaveRecommendationsAsync(int taskId, List<AiSuggestionResult> suggestions)

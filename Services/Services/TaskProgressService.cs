@@ -10,19 +10,22 @@ public class TaskProgressService : ITaskProgressService
 {
     private readonly ITaskRepository _taskRepository;
     private readonly ITaskLogRepository _taskLogRepository;
+    private readonly IOrganizationService _organizationService;
     private readonly ILogger<TaskProgressService> _logger;
 
     public TaskProgressService(
         ITaskRepository taskRepository,
         ITaskLogRepository taskLogRepository,
+        IOrganizationService organizationService,
         ILogger<TaskProgressService> logger)
     {
         _taskRepository = taskRepository;
         _taskLogRepository = taskLogRepository;
+        _organizationService = organizationService;
         _logger = logger;
     }
 
-    public async Task UpdateProgressAsync(int taskId, int progress, string? note)
+    public async Task UpdateProgressAsync(int taskId, int progress, string? note, string? risk)
     {
         _logger.LogInformation("Updating progress for TaskId={TaskId} to {Progress}%", taskId, progress);
 
@@ -52,16 +55,31 @@ public class TaskProgressService : ITaskProgressService
             }
         }
 
+        // Escalate risk level if the user provided a "Risk" in the log
+        if (!string.IsNullOrWhiteSpace(risk))
+        {
+            if (riskLevel == "LOW") riskLevel = "MEDIUM";
+            else if (riskLevel == "MEDIUM") riskLevel = "HIGH";
+        }
+
         // Save log
         var log = new TaskLog
         {
             TaskId = taskId,
             Progress = progress,
-            Note = note
+            Note = note,
+            Risk = risk
         };
         await _taskLogRepository.AddAsync(log);
 
         // Update task
         await _taskRepository.UpdateProgressAsync(taskId, progress, riskLevel);
+
+        // Update Project-level progress & AI Prediction
+        if (task.ProjectId.HasValue)
+        {
+            await _organizationService.CalculateProjectProgressAsync(task.ProjectId.Value);
+            await _organizationService.PredictCompletionDateAsync(task.ProjectId.Value);
+        }
     }
 }

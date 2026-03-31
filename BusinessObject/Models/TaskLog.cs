@@ -13,6 +13,8 @@ public partial class TaskLog
 
     public string? Note { get; set; }
 
+    public string? Risk { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public virtual Task? Task { get; set; }

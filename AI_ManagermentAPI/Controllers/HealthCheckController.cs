@@ -8,10 +8,17 @@ namespace AI_ManagermentAPI.Controllers;
 public class HealthCheckController : ControllerBase
 {
     private readonly IHuggingFaceService _huggingFaceService;
+    private readonly IClassificationService _classificationService;
+    private readonly ITextGenerationService _textGenerationService;
 
-    public HealthCheckController(IHuggingFaceService huggingFaceService)
+    public HealthCheckController(
+        IHuggingFaceService huggingFaceService,
+        IClassificationService classificationService,
+        ITextGenerationService textGenerationService)
     {
         _huggingFaceService = huggingFaceService;
+        _classificationService = classificationService;
+        _textGenerationService = textGenerationService;
     }
 
     /// <summary>
@@ -47,29 +54,74 @@ public class HealthCheckController : ControllerBase
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("ApiKey"))
         {
-            return BadRequest(new
-            {
-                status = "❌ NOT CONFIGURED",
-                message = "HuggingFace API key is not set in appsettings.json.",
-                detail = ex.Message
-            });
+            return BadRequest(new { status = "❌ NOT CONFIGURED", message = "HuggingFace API key is not set in appsettings.json.", detail = ex.Message });
         }
         catch (HttpRequestException ex)
         {
-            return StatusCode(502, new
+            return StatusCode(502, new { status = "❌ FAILED", message = "HuggingFace API call failed.", detail = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { status = "❌ ERROR", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Test Classification Model (bart-large-mnli)
+    /// </summary>
+    [HttpGet("classification")]
+    public async Task<IActionResult> TestClassification()
+    {
+        try
+        {
+            var text = "Fix the login page UI bugs and make the button blue.";
+            var labels = new[] { "frontend", "backend", "devops" };
+            
+            var scores = await _classificationService.ClassifyZeroShotAsync(text, labels);
+
+            return Ok(new
             {
-                status = "❌ FAILED",
-                message = "HuggingFace API call failed. Key might be invalid or expired.",
-                detail = ex.Message
+                status = "✅ SUCCESS",
+                message = "Classification model is working!",
+                testResults = new
+                {
+                    inputText = text,
+                    candidateLabels = labels,
+                    classificationScores = scores
+                }
             });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new
+            return StatusCode(500, new { status = "❌ FAILED", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Test Text Generation Model (gpt2)
+    /// </summary>
+    [HttpGet("textgeneration")]
+    public async Task<IActionResult> TestTextGeneration()
+    {
+        try
+        {
+            var prompt = "Explain briefly why a C# developer is a good fit for building a .NET Web API.";
+            var generatedText = await _textGenerationService.GenerateTextAsync(prompt, 50);
+
+            return Ok(new
             {
-                status = "❌ ERROR",
-                message = ex.Message
+                status = "✅ SUCCESS",
+                message = "Text generation model is working!",
+                testResults = new
+                {
+                    prompt = prompt,
+                    generatedText = generatedText
+                }
             });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { status = "❌ FAILED", message = ex.Message });
         }
     }
 }

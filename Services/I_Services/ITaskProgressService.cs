@@ -5,5 +5,5 @@ namespace Services.I_Services;
 
 public interface ITaskProgressService
 {
-    Task UpdateProgressAsync(int taskId, int progress, string? note);
+    Task UpdateProgressAsync(int taskId, int progress, string? note, string? risk);
 }

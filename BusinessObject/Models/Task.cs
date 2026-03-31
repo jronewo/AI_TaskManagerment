@@ -21,6 +21,10 @@ public partial class Task
 
     public int? EstimatedTime { get; set; }
 
+    public int? AiEstimatedTime { get; set; }
+
+    public int? ActualTime { get; set; }
+
     public int? Difficulty { get; set; }
 
     public int? CreatedBy { get; set; }
@@ -49,9 +53,11 @@ public partial class Task
 
     public virtual ICollection<TaskRequiredSkill> TaskRequiredSkills { get; set; } = new List<TaskRequiredSkill>();
 
-    public virtual ICollection<TaskVersion> TaskVersions { get; set; } = new List<TaskVersion>();
-
     public virtual TaskEmbedding? TaskEmbedding { get; set; }
 
     public virtual ICollection<TaskLog> TaskLogs { get; set; } = new List<TaskLog>();
+
+    public virtual ICollection<TaskDependency> DependentOnTasks { get; set; } = new List<TaskDependency>();
+
+    public virtual ICollection<TaskDependency> TaskDependencies { get; set; } = new List<TaskDependency>();
 }

@@ -31,8 +31,24 @@ public class TaskProgressController : ControllerBase
     {
         try
         {
-            await _taskProgressService.UpdateProgressAsync(taskId, request.Progress, request.Note);
-            return Ok(new { message = "Progress updated successfully." });
+            await _taskProgressService.UpdateProgressAsync(taskId, request.Progress, request.Note, request.Risk);
+            
+            // Trigger AI to classify and analyze project risk in the background
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = HttpContext.RequestServices.CreateScope();
+                    var aiAnalysisService = scope.ServiceProvider.GetRequiredService<IAiAnalysisService>();
+                    await aiAnalysisService.ClassifyAndAnalyzeTaskAsync(taskId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Background AI analysis failed for TaskId: {TaskId}", taskId);
+                }
+            });
+
+            return Ok(new { message = "Progress updated successfully. AI analysis is running in background." });
         }
         catch (ArgumentException ex)
         {
@@ -62,6 +78,7 @@ public class TaskProgressController : ControllerBase
                 TaskId = l.TaskId,
                 Progress = l.Progress,
                 Note = l.Note,
+                Risk = l.Risk,
                 CreatedAt = l.CreatedAt
             }).OrderByDescending(l => l.CreatedAt).ToList();
 

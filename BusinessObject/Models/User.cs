@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace BusinessObject.Models;
@@ -35,8 +35,6 @@ public partial class User
 
     public virtual ICollection<TaskComment> TaskComments { get; set; } = new List<TaskComment>();
 
-    public virtual ICollection<TaskVersion> TaskVersions { get; set; } = new List<TaskVersion>();
-
     public virtual ICollection<Task> Tasks { get; set; } = new List<Task>();
 
     public virtual ICollection<TeamMember> TeamMembers { get; set; } = new List<TeamMember>();
@@ -46,4 +44,8 @@ public partial class User
     public virtual ICollection<UserAvailability> UserAvailabilities { get; set; } = new List<UserAvailability>();
 
     public virtual ICollection<UserSkill> UserSkills { get; set; } = new List<UserSkill>();
+    
+    public virtual ICollection<Organization> Organizations { get; set; } = new List<Organization>();
+
+    public virtual ICollection<ProjectEvaluation> ProjectEvaluations { get; set; } = new List<ProjectEvaluation>();
 }

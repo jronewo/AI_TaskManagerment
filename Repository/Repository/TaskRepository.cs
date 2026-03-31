@@ -28,20 +28,22 @@ public class TaskRepository : ITaskRepository
             .ToListAsync();
     }
 
-    public async Task<List<TaskRequiredSkill>> GetTaskRequiredSkillsAsync(int taskId)
-    {
-        return await _context.Set<TaskRequiredSkill>()
-            .Where(trs => trs.TaskId == taskId)
-            .Include(trs => trs.Skill)
-            .ToListAsync();
-    }
-
     public async Task<List<TaskAssignee>> GetTaskAssigneesAsync(int taskId)
     {
         return await _context.TaskAssignees
             .Where(ta => ta.TaskId == taskId)
             .Include(ta => ta.User)
             .ToListAsync();
+    }
+
+    public async Task ClearTaskAssigneesAsync(int taskId)
+    {
+        var assignees = await _context.TaskAssignees.Where(ta => ta.TaskId == taskId).ToListAsync();
+        if (assignees.Any())
+        {
+            _context.TaskAssignees.RemoveRange(assignees);
+            await _context.SaveChangesAsync();
+        }
     }
 
     public async Task AddTaskAssigneeAsync(TaskAssignee assignee)
@@ -60,5 +62,54 @@ public class TaskRepository : ITaskRepository
             _context.Tasks.Update(task);
             await _context.SaveChangesAsync();
         }
+    }
+
+    public async Task<int> GetCompletedTaskCountByProjectAsync(int projectId)
+    {
+        return await _context.Tasks
+            .Where(t => t.ProjectId == projectId && t.Status == "Done")
+            .CountAsync();
+    }
+
+    public async Task<int> GetTotalTaskCountByProjectAsync(int projectId)
+    {
+        return await _context.Tasks
+            .Where(t => t.ProjectId == projectId)
+            .CountAsync();
+    }
+
+    public async Task<BusinessObject.Models.Task> AddAsync(BusinessObject.Models.Task task)
+    {
+        _context.Tasks.Add(task);
+        await _context.SaveChangesAsync();
+        return task;
+    }
+
+    public async Task UpdateAsync(BusinessObject.Models.Task task)
+    {
+        _context.Tasks.Update(task);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int taskId)
+    {
+        var task = await _context.Tasks.FindAsync(taskId);
+        if (task != null)
+        {
+            _context.Tasks.Remove(task);
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task<List<BusinessObject.Models.Task>> GetByProjectIdWithDetailsAsync(int projectId)
+    {
+        return await _context.Tasks
+            .Where(t => t.ProjectId == projectId)
+            .Include(t => t.TaskAssignees)
+                .ThenInclude(ta => ta.User)
+            .Include(t => t.TaskDependencies) // The task depends on others
+                .ThenInclude(td => td.DependsOnTask)
+            .Include(t => t.DependentOnTasks) // Others depend on this task
+            .ToListAsync();
     }
 }

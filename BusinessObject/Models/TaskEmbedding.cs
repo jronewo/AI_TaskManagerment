@@ -11,5 +11,5 @@ public partial class TaskEmbedding
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual Task? Task { get; set; }
+    public virtual Task Task { get; set; } = null!;
 }

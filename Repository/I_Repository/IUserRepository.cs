@@ -11,4 +11,7 @@ public interface IUserRepository
     Task<List<UserAvailability>> GetUserAvailabilityAsync(int userId);
     Task<List<Evaluation>> GetUserEvaluationsAsync(int userId);
     Task<int> CountActiveTasksByUserAsync(int userId);
+    Task<User?> GetByEmailAsync(string email);
+    System.Threading.Tasks.Task AddUserAsync(User user);
+    System.Threading.Tasks.Task UpdateUserAsync(User user);
 }

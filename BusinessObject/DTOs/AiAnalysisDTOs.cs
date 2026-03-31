@@ -15,6 +15,7 @@ public class UpdateProgressRequest
 {
     public int Progress { get; set; }
     public string? Note { get; set; }
+    public string? Risk { get; set; }
 }
 
 public class TaskLogResponse
@@ -23,6 +24,7 @@ public class TaskLogResponse
     public int? TaskId { get; set; }
     public int? Progress { get; set; }
     public string? Note { get; set; }
+    public string? Risk { get; set; }
     public DateTime? CreatedAt { get; set; }
 }
 

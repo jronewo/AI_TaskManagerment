@@ -42,6 +42,24 @@ public class AiAnalysisController : ControllerBase
     }
 
     /// <summary>
+    /// Run AI risk analysis on all active tasks in a project
+    /// </summary>
+    [HttpPost("project/{projectId}/analyze-all")]
+    public async Task<IActionResult> RunProjectRiskAnalysis(int projectId)
+    {
+        try
+        {
+            var summary = await _aiAnalysisService.AnalyzeProjectRisksAsync(projectId);
+            return Ok(summary);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error running project-wide risk analysis for ProjectId: {ProjectId}", projectId);
+            return StatusCode(500, new { message = "An error occurred during project risk analysis." });
+        }
+    }
+
+    /// <summary>
     /// Generate an AI summary for a task
     /// </summary>
     [HttpPost("{taskId}/summary")]
@@ -56,6 +74,42 @@ public class AiAnalysisController : ControllerBase
         {
             _logger.LogError(ex, "Error generating summary for TaskId: {TaskId}", taskId);
             return StatusCode(500, new { message = "An error occurred while generating task summary." });
+        }
+    }
+
+    /// <summary>
+    /// Predict task type and difficulty using AI Classification
+    /// </summary>
+    [HttpPost("{taskId}/classify")]
+    public async Task<IActionResult> ClassifyTask(int taskId)
+    {
+        try
+        {
+            await _aiAnalysisService.ClassifyAndAnalyzeTaskAsync(taskId);
+            return Ok(new { message = "Task classification and analysis completed successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error classifying task for TaskId: {TaskId}", taskId);
+            return StatusCode(500, new { message = "An error occurred during task classification." });
+        }
+    }
+
+    /// <summary>
+    /// Get AI-driven task distribution (splitting) suggestions for a project
+    /// </summary>
+    [HttpGet("project/{projectId}/workload")]
+    public async Task<ActionResult<WorkloadSuggestionResponse>> GetWorkloadSuggestions(int projectId, [FromServices] ITextGenerationService textGenerationService)
+    {
+        try
+        {
+            var suggestions = await textGenerationService.SuggestWorkloadAsync(projectId);
+            return Ok(suggestions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating workload suggestions for ProjectId: {ProjectId}", projectId);
+            return StatusCode(500, new { message = "An error occurred while generating workload suggestions." });
         }
     }
 

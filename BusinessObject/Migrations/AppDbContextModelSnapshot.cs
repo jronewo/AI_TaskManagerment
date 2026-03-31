@@ -55,7 +55,7 @@ namespace BusinessObject.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("LogId")
-                        .HasName("PK__activity__9E2397E0D2B13D2D");
+                        .HasName("PK__activity__9E2397E0EE5103A4");
 
                     b.ToTable("activity_logs", (string)null);
                 });
@@ -129,7 +129,7 @@ namespace BusinessObject.Migrations
                         .HasColumnName("task_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__ai_recom__3213E83F21EB708F");
+                        .HasName("PK__ai_recom__3213E83FF227C486");
 
                     b.HasIndex("SuggestedUserId");
 
@@ -178,7 +178,7 @@ namespace BusinessObject.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("EvaluationId")
-                        .HasName("PK__evaluati__827C592D8C87BA03");
+                        .HasName("PK__evaluati__827C592DBCF1FB91");
 
                     b.HasIndex("LeaderId");
 
@@ -211,11 +211,113 @@ namespace BusinessObject.Migrations
                         .HasColumnName("team_id");
 
                     b.HasKey("InvitationId")
-                        .HasName("PK__invitati__94B74D7CA75E2E4F");
+                        .HasName("PK__invitati__94B74D7C938D73DA");
 
                     b.HasIndex("TeamId");
 
                     b.ToTable("invitations", (string)null);
+                });
+
+            modelBuilder.Entity("BusinessObject.Models.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("notification_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("message");
+
+                    b.Property<int?>("ReferenceId")
+                        .HasColumnType("int")
+                        .HasColumnName("reference_id");
+
+                    b.Property<string>("ReferenceType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("reference_type");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("title");
+
+                    b.Property<string>("Type")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("type");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("NotificationId")
+                        .HasName("PK_notifications");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("notifications", (string)null);
+                });
+
+            modelBuilder.Entity("BusinessObject.Models.Organization", b =>
+                {
+                    b.Property<int>("OrganizationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("organization_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrganizationId"));
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Logo")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("logo");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("OwnerId")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("OrganizationId")
+                        .HasName("PK_organizations");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("organizations", (string)null);
                 });
 
             modelBuilder.Entity("BusinessObject.Models.Project", b =>
@@ -226,6 +328,18 @@ namespace BusinessObject.Migrations
                         .HasColumnName("project_id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProjectId"));
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByNavigationUserId")
+                        .HasColumnType("int");
 
                     b.Property<DateOnly?>("Deadline")
                         .HasColumnType("date")
@@ -240,6 +354,20 @@ namespace BusinessObject.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("OrganizationId")
+                        .HasColumnType("int")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateOnly?>("PredictedEndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("predicted_end_date");
+
+                    b.Property<int?>("Progress")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("progress");
+
                     b.Property<string>("Status")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
@@ -249,12 +377,73 @@ namespace BusinessObject.Migrations
                         .HasColumnType("int")
                         .HasColumnName("team_id");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated_at");
+
                     b.HasKey("ProjectId")
-                        .HasName("PK__projects__BC799E1FAD18A4D5");
+                        .HasName("PK__projects__BC799E1F9E7CEF3B");
+
+                    b.HasIndex("CreatedByNavigationUserId");
+
+                    b.HasIndex("OrganizationId");
 
                     b.HasIndex("TeamId");
 
                     b.ToTable("projects", (string)null);
+                });
+
+            modelBuilder.Entity("BusinessObject.Models.ProjectEvaluation", b =>
+                {
+                    b.Property<int>("EvaluationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("evaluation_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EvaluationId"));
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("comment");
+
+                    b.Property<int?>("CommunicationScore")
+                        .HasColumnType("int")
+                        .HasColumnName("communication_score");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int>("EvaluatorId")
+                        .HasColumnType("int")
+                        .HasColumnName("evaluator_id");
+
+                    b.Property<int?>("OverallScore")
+                        .HasColumnType("int")
+                        .HasColumnName("overall_score");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int")
+                        .HasColumnName("project_id");
+
+                    b.Property<int?>("QualityScore")
+                        .HasColumnType("int")
+                        .HasColumnName("quality_score");
+
+                    b.Property<int?>("TimelinessScore")
+                        .HasColumnType("int")
+                        .HasColumnName("timeliness_score");
+
+                    b.HasKey("EvaluationId")
+                        .HasName("PK_project_evaluations");
+
+                    b.HasIndex("EvaluatorId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("project_evaluations", (string)null);
                 });
 
             modelBuilder.Entity("BusinessObject.Models.Skill", b =>
@@ -273,9 +462,9 @@ namespace BusinessObject.Migrations
                         .HasColumnName("skill_name");
 
                     b.HasKey("SkillId")
-                        .HasName("PK__skills__FBBA83797F619518");
+                        .HasName("PK__skills__FBBA837902EF6DE9");
 
-                    b.HasIndex(new[] { "SkillName" }, "UQ__skills__73C038ADD9DB64DB")
+                    b.HasIndex(new[] { "SkillName" }, "UQ__skills__73C038AD12806053")
                         .IsUnique();
 
                     b.ToTable("skills", (string)null);
@@ -289,6 +478,14 @@ namespace BusinessObject.Migrations
                         .HasColumnName("task_id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TaskId"));
+
+                    b.Property<int?>("ActualTime")
+                        .HasColumnType("int")
+                        .HasColumnName("actual_time");
+
+                    b.Property<int?>("AiEstimatedTime")
+                        .HasColumnType("int")
+                        .HasColumnName("ai_estimated_time");
 
                     b.Property<string>("AiSummary")
                         .HasColumnType("nvarchar(max)")
@@ -357,7 +554,7 @@ namespace BusinessObject.Migrations
                         .HasColumnName("version");
 
                     b.HasKey("TaskId")
-                        .HasName("PK__tasks__0492148DFA0DD50E");
+                        .HasName("PK__tasks__0492148D776260FB");
 
                     b.HasIndex("CreatedBy");
 
@@ -389,11 +586,11 @@ namespace BusinessObject.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__task_ass__3213E83FEEB4DF50");
+                        .HasName("PK__task_ass__3213E83F508CE41A");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex(new[] { "TaskId", "UserId" }, "UQ__task_ass__EF09F7FCF68B3887")
+                    b.HasIndex(new[] { "TaskId", "UserId" }, "UQ__task_ass__EF09F7FCB797C73F")
                         .IsUnique()
                         .HasFilter("[task_id] IS NOT NULL AND [user_id] IS NOT NULL");
 
@@ -413,6 +610,12 @@ namespace BusinessObject.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("content");
 
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("TaskId")
                         .HasColumnType("int")
                         .HasColumnName("task_id");
@@ -422,13 +625,40 @@ namespace BusinessObject.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("CommentId")
-                        .HasName("PK__task_com__E7957687818A02F9");
+                        .HasName("PK__task_com__E795768799D9D2A0");
 
                     b.HasIndex("TaskId");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("task_comments", (string)null);
+                });
+
+            modelBuilder.Entity("BusinessObject.Models.TaskDependency", b =>
+                {
+                    b.Property<int>("DependencyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("dependency_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DependencyId"));
+
+                    b.Property<int>("DependsOnTaskId")
+                        .HasColumnType("int")
+                        .HasColumnName("depends_on_task_id");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("int")
+                        .HasColumnName("task_id");
+
+                    b.HasKey("DependencyId")
+                        .HasName("PK_task_dependencies");
+
+                    b.HasIndex("DependsOnTaskId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("task_dependencies", (string)null);
                 });
 
             modelBuilder.Entity("BusinessObject.Models.TaskEmbedding", b =>
@@ -448,7 +678,7 @@ namespace BusinessObject.Migrations
                         .HasColumnName("embedding");
 
                     b.HasKey("TaskId")
-                        .HasName("PK__task_emb__0492148D47BA0192");
+                        .HasName("PK__task_emb__0492148DABF2B4CD");
 
                     b.ToTable("task_embeddings", (string)null);
                 });
@@ -476,12 +706,15 @@ namespace BusinessObject.Migrations
                         .HasColumnType("int")
                         .HasColumnName("progress");
 
+                    b.Property<string>("Risk")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("TaskId")
                         .HasColumnType("int")
                         .HasColumnName("task_id");
 
                     b.HasKey("LogId")
-                        .HasName("PK__task_log__9E2397E02B7D9E0A");
+                        .HasName("PK__task_log__9E2397E0AC4592A4");
 
                     b.HasIndex("TaskId");
 
@@ -492,18 +725,22 @@ namespace BusinessObject.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int?>("RequiredLevel")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("RequiredLevel");
 
                     b.Property<int?>("SkillId")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("SkillId");
 
                     b.Property<int?>("TaskId")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("TaskId");
 
                     b.HasKey("Id");
 
@@ -511,63 +748,7 @@ namespace BusinessObject.Migrations
 
                     b.HasIndex("TaskId");
 
-                    b.ToTable("TaskRequiredSkill");
-                });
-
-            modelBuilder.Entity("BusinessObject.Models.TaskVersion", b =>
-                {
-                    b.Property<int>("VersionId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("version_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VersionId"));
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Priority")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasColumnName("priority");
-
-                    b.Property<string>("Status")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("status");
-
-                    b.Property<int?>("TaskId")
-                        .HasColumnType("int")
-                        .HasColumnName("task_id");
-
-                    b.Property<string>("Title")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("title");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("updated_at")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int?>("UpdatedBy")
-                        .HasColumnType("int")
-                        .HasColumnName("updated_by");
-
-                    b.Property<int?>("Version")
-                        .HasColumnType("int")
-                        .HasColumnName("version");
-
-                    b.HasKey("VersionId")
-                        .HasName("PK__task_ver__07A58869AABF27E6");
-
-                    b.HasIndex("TaskId");
-
-                    b.HasIndex("UpdatedBy");
-
-                    b.ToTable("task_versions", (string)null);
+                    b.ToTable("TaskRequiredSkill", (string)null);
                 });
 
             modelBuilder.Entity("BusinessObject.Models.Team", b =>
@@ -593,7 +774,7 @@ namespace BusinessObject.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("TeamId")
-                        .HasName("PK__teams__F82DEDBC30602299");
+                        .HasName("PK__teams__F82DEDBCF1BFE95F");
 
                     b.HasIndex("CreatedBy");
 
@@ -623,11 +804,11 @@ namespace BusinessObject.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__team_mem__3213E83F1EBDEBBB");
+                        .HasName("PK__team_mem__3213E83FA2B300EE");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex(new[] { "TeamId", "UserId" }, "UQ__team_mem__13B60ECD231DA964")
+                    b.HasIndex(new[] { "TeamId", "UserId" }, "UQ__team_mem__13B60ECD7B0D1141")
                         .IsUnique()
                         .HasFilter("[team_id] IS NOT NULL AND [user_id] IS NOT NULL");
 
@@ -678,7 +859,7 @@ namespace BusinessObject.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("MEMBER")
+                        .HasDefaultValue("NORMAL_USER")
                         .HasColumnName("role");
 
                     b.Property<int?>("Status")
@@ -692,9 +873,9 @@ namespace BusinessObject.Migrations
                         .HasColumnName("updated_at");
 
                     b.HasKey("UserId")
-                        .HasName("PK__users__B9BE370FDD62F7C2");
+                        .HasName("PK__users__B9BE370FA9E917F7");
 
-                    b.HasIndex(new[] { "Email" }, "UQ__users__AB6E61644BB714A5")
+                    b.HasIndex(new[] { "Email" }, "UQ__users__AB6E616414D1BC50")
                         .IsUnique();
 
                     b.ToTable("users", null, t =>
@@ -727,7 +908,7 @@ namespace BusinessObject.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__user_ava__3213E83FB13E13B5");
+                        .HasName("PK__user_ava__3213E83FAD6E302D");
 
                     b.HasIndex("UserId");
 
@@ -756,11 +937,11 @@ namespace BusinessObject.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__user_ski__3213E83FFDF7CCA2");
+                        .HasName("PK__user_ski__3213E83FF7FE70DE");
 
                     b.HasIndex("SkillId");
 
-                    b.HasIndex(new[] { "UserId", "SkillId" }, "UQ__user_ski__36059F39A964580F")
+                    b.HasIndex(new[] { "UserId", "SkillId" }, "UQ__user_ski__36059F39B938ADFF")
                         .IsUnique()
                         .HasFilter("[user_id] IS NOT NULL AND [skill_id] IS NOT NULL");
 
@@ -783,12 +964,12 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.User", "SuggestedUser")
                         .WithMany("AiRecommendations")
                         .HasForeignKey("SuggestedUserId")
-                        .HasConstraintName("FK__ai_recomm__sugge__04E4BC85");
+                        .HasConstraintName("FK__ai_recomm__sugge__71D1E811");
 
                     b.HasOne("BusinessObject.Models.Task", "Task")
                         .WithMany("AiRecommendations")
                         .HasForeignKey("TaskId")
-                        .HasConstraintName("FK__ai_recomm__task___03F0984C");
+                        .HasConstraintName("FK__ai_recomm__task___70DDC3D8");
 
                     b.Navigation("SuggestedUser");
 
@@ -800,12 +981,12 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.User", "Leader")
                         .WithMany("EvaluationLeaders")
                         .HasForeignKey("LeaderId")
-                        .HasConstraintName("FK__evaluatio__leade__5FB337D6");
+                        .HasConstraintName("FK__evaluatio__leade__4CA06362");
 
                     b.HasOne("BusinessObject.Models.User", "User")
                         .WithMany("EvaluationUsers")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__evaluatio__user___5EBF139D");
+                        .HasConstraintName("FK__evaluatio__user___4BAC3F29");
 
                     b.Navigation("Leader");
 
@@ -817,19 +998,71 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.Team", "Team")
                         .WithMany("Invitations")
                         .HasForeignKey("TeamId")
-                        .HasConstraintName("FK__invitatio__team___6B24EA82");
+                        .HasConstraintName("FK__invitatio__team___5812160E");
 
                     b.Navigation("Team");
                 });
 
+            modelBuilder.Entity("BusinessObject.Models.Notification", b =>
+                {
+                    b.HasOne("BusinessObject.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("FK_notifications_users");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BusinessObject.Models.Organization", b =>
+                {
+                    b.HasOne("BusinessObject.Models.User", "Owner")
+                        .WithMany("Organizations")
+                        .HasForeignKey("OwnerId")
+                        .HasConstraintName("FK_organizations_users");
+
+                    b.Navigation("Owner");
+                });
+
             modelBuilder.Entity("BusinessObject.Models.Project", b =>
                 {
+                    b.HasOne("BusinessObject.Models.User", "CreatedByNavigation")
+                        .WithMany()
+                        .HasForeignKey("CreatedByNavigationUserId");
+
+                    b.HasOne("BusinessObject.Models.Organization", "Organization")
+                        .WithMany("Projects")
+                        .HasForeignKey("OrganizationId")
+                        .HasConstraintName("FK_projects_organizations");
+
                     b.HasOne("BusinessObject.Models.Team", "Team")
                         .WithMany("Projects")
                         .HasForeignKey("TeamId")
                         .HasConstraintName("FK__projects__team_i__6E01572D");
 
+                    b.Navigation("CreatedByNavigation");
+
+                    b.Navigation("Organization");
+
                     b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("BusinessObject.Models.ProjectEvaluation", b =>
+                {
+                    b.HasOne("BusinessObject.Models.User", "Evaluator")
+                        .WithMany("ProjectEvaluations")
+                        .HasForeignKey("EvaluatorId")
+                        .IsRequired()
+                        .HasConstraintName("FK_project_evaluations_users");
+
+                    b.HasOne("BusinessObject.Models.Project", "Project")
+                        .WithMany("ProjectEvaluations")
+                        .HasForeignKey("ProjectId")
+                        .IsRequired()
+                        .HasConstraintName("FK_project_evaluations_projects");
+
+                    b.Navigation("Evaluator");
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("BusinessObject.Models.Task", b =>
@@ -837,12 +1070,12 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.User", "CreatedByNavigation")
                         .WithMany("Tasks")
                         .HasForeignKey("CreatedBy")
-                        .HasConstraintName("FK__tasks__created_b__71D1E811");
+                        .HasConstraintName("FK__tasks__created_b__5EBF139D");
 
                     b.HasOne("BusinessObject.Models.Project", "Project")
                         .WithMany("Tasks")
                         .HasForeignKey("ProjectId")
-                        .HasConstraintName("FK__tasks__project_i__70DDC3D8");
+                        .HasConstraintName("FK__tasks__project_i__5DCAEF64");
 
                     b.Navigation("CreatedByNavigation");
 
@@ -854,12 +1087,12 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.Task", "Task")
                         .WithMany("TaskAssignees")
                         .HasForeignKey("TaskId")
-                        .HasConstraintName("FK__task_assi__task___7C4F7684");
+                        .HasConstraintName("FK__task_assi__task___693CA210");
 
                     b.HasOne("BusinessObject.Models.User", "User")
                         .WithMany("TaskAssignees")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__task_assi__user___7D439ABD");
+                        .HasConstraintName("FK__task_assi__user___6A30C649");
 
                     b.Navigation("Task");
 
@@ -871,16 +1104,36 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.Task", "Task")
                         .WithMany("TaskComments")
                         .HasForeignKey("TaskId")
-                        .HasConstraintName("FK__task_comm__task___00200768");
+                        .HasConstraintName("FK__task_comm__task___6D0D32F4");
 
                     b.HasOne("BusinessObject.Models.User", "User")
                         .WithMany("TaskComments")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__task_comm__user___01142BA1");
+                        .HasConstraintName("FK__task_comm__user___6E01572D");
 
                     b.Navigation("Task");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BusinessObject.Models.TaskDependency", b =>
+                {
+                    b.HasOne("BusinessObject.Models.Task", "DependsOnTask")
+                        .WithMany("DependentOnTasks")
+                        .HasForeignKey("DependsOnTaskId")
+                        .IsRequired()
+                        .HasConstraintName("FK_task_dependencies_depends_on_task");
+
+                    b.HasOne("BusinessObject.Models.Task", "Task")
+                        .WithMany("TaskDependencies")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_task_dependencies_task");
+
+                    b.Navigation("DependsOnTask");
+
+                    b.Navigation("Task");
                 });
 
             modelBuilder.Entity("BusinessObject.Models.TaskEmbedding", b =>
@@ -910,32 +1163,19 @@ namespace BusinessObject.Migrations
                 {
                     b.HasOne("BusinessObject.Models.Skill", "Skill")
                         .WithMany("TaskRequiredSkills")
-                        .HasForeignKey("SkillId");
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("FK_TaskRequiredSkill_skills");
 
                     b.HasOne("BusinessObject.Models.Task", "Task")
                         .WithMany("TaskRequiredSkills")
-                        .HasForeignKey("TaskId");
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("FK_TaskRequiredSkill_tasks");
 
                     b.Navigation("Skill");
 
                     b.Navigation("Task");
-                });
-
-            modelBuilder.Entity("BusinessObject.Models.TaskVersion", b =>
-                {
-                    b.HasOne("BusinessObject.Models.Task", "Task")
-                        .WithMany("TaskVersions")
-                        .HasForeignKey("TaskId")
-                        .HasConstraintName("FK__task_vers__task___76969D2E");
-
-                    b.HasOne("BusinessObject.Models.User", "UpdatedByNavigation")
-                        .WithMany("TaskVersions")
-                        .HasForeignKey("UpdatedBy")
-                        .HasConstraintName("FK__task_vers__updat__778AC167");
-
-                    b.Navigation("Task");
-
-                    b.Navigation("UpdatedByNavigation");
                 });
 
             modelBuilder.Entity("BusinessObject.Models.Team", b =>
@@ -943,7 +1183,7 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.User", "CreatedByNavigation")
                         .WithMany("Teams")
                         .HasForeignKey("CreatedBy")
-                        .HasConstraintName("FK__teams__created_b__6383C8BA");
+                        .HasConstraintName("FK__teams__created_b__5070F446");
 
                     b.Navigation("CreatedByNavigation");
                 });
@@ -953,12 +1193,12 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.Team", "Team")
                         .WithMany("TeamMembers")
                         .HasForeignKey("TeamId")
-                        .HasConstraintName("FK__team_memb__team___6754599E");
+                        .HasConstraintName("FK__team_memb__team___5441852A");
 
                     b.HasOne("BusinessObject.Models.User", "User")
                         .WithMany("TeamMembers")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__team_memb__user___68487DD7");
+                        .HasConstraintName("FK__team_memb__user___5535A963");
 
                     b.Navigation("Team");
 
@@ -970,7 +1210,7 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.User", "User")
                         .WithMany("UserAvailabilities")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__user_avai__user___5BE2A6F2");
+                        .HasConstraintName("FK__user_avai__user___48CFD27E");
 
                     b.Navigation("User");
                 });
@@ -980,20 +1220,27 @@ namespace BusinessObject.Migrations
                     b.HasOne("BusinessObject.Models.Skill", "Skill")
                         .WithMany("UserSkills")
                         .HasForeignKey("SkillId")
-                        .HasConstraintName("FK__user_skil__skill__5812160E");
+                        .HasConstraintName("FK__user_skil__skill__44FF419A");
 
                     b.HasOne("BusinessObject.Models.User", "User")
                         .WithMany("UserSkills")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__user_skil__user___571DF1D5");
+                        .HasConstraintName("FK__user_skil__user___440B1D61");
 
                     b.Navigation("Skill");
 
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("BusinessObject.Models.Organization", b =>
+                {
+                    b.Navigation("Projects");
+                });
+
             modelBuilder.Entity("BusinessObject.Models.Project", b =>
                 {
+                    b.Navigation("ProjectEvaluations");
+
                     b.Navigation("Tasks");
                 });
 
@@ -1010,17 +1257,19 @@ namespace BusinessObject.Migrations
 
                     b.Navigation("AiRecommendations");
 
+                    b.Navigation("DependentOnTasks");
+
                     b.Navigation("TaskAssignees");
 
                     b.Navigation("TaskComments");
+
+                    b.Navigation("TaskDependencies");
 
                     b.Navigation("TaskEmbedding");
 
                     b.Navigation("TaskLogs");
 
                     b.Navigation("TaskRequiredSkills");
-
-                    b.Navigation("TaskVersions");
                 });
 
             modelBuilder.Entity("BusinessObject.Models.Team", b =>
@@ -1040,11 +1289,13 @@ namespace BusinessObject.Migrations
 
                     b.Navigation("EvaluationUsers");
 
+                    b.Navigation("Organizations");
+
+                    b.Navigation("ProjectEvaluations");
+
                     b.Navigation("TaskAssignees");
 
                     b.Navigation("TaskComments");
-
-                    b.Navigation("TaskVersions");
 
                     b.Navigation("Tasks");
 
